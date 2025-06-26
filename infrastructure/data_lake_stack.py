@@ -7,7 +7,8 @@ from aws_cdk import (
     aws_iam as iam,
     RemovalPolicy,
     Duration,
-    CfnOutput
+    CfnOutput,
+    aws_s3_deployment as s3deploy
 )
 from constructs import Construct
 import yaml
@@ -84,4 +85,63 @@ class DataLakeStack(Stack):
             self, "ProcessedBucketName",
             value=self.processed_bucket.bucket_name,
             export_name=f"{self.stack_name}-processed-bucket"
+        )
+
+        # Create prefixes inside s3 buckets
+        CfnOutput(
+            self, "RawPrefix",
+            value=f"s3://{self.raw_bucket.bucket_name}/raw/",
+            export_name=f"{self.stack_name}-RawPrefix"
+        )
+
+        CfnOutput(
+            self, "ProcessedPrefix",
+            value=f"s3://{self.processed_bucket.bucket_name}/processed/",
+            export_name=f"{self.stack_name}-ProcessedPrefix"
+        )
+
+        # Seed raw/ prefix with a placeholder object
+        s3deploy.BucketDeployment(
+            self,
+            "SeedRawPrefix",
+            destination_bucket=self.raw_bucket,
+            destination_key_prefix="raw",
+            sources=[
+                s3deploy.Source.data(
+                    "_README.txt",
+                    "Place source JSONL (.jsonl.gz) files here; do not modify once uploaded."
+                )
+            ],
+        )
+
+        # # Seed processed/ prefix with a placeholder object
+        s3deploy.BucketDeployment(
+            self,
+            "SeedProcessedPrefix",
+            destination_bucket=self.processed_bucket,
+            destination_key_prefix="processed",
+            sources=[
+                s3deploy.Source.data(
+                    "_README.txt",
+                    "Auto-generated Parquet only - written by the ingestion job."
+                )
+            ],
+        )
+
+        # IAM for ingestion role
+        ingest_role = iam.Role(
+            self, "IngestRole",
+            assumed_by=iam.ServicePrincipal("ec2.amazonaws.com"),
+            description="Allows EC2 ingestion job to write to raw/ and processed/ prefixes",
+        )
+
+        # Grant write s3 permision
+        ingest_role.add_to_policy(
+            iam.PolicyStatement(
+                actions=["s3:PutObject", "s3:AbortMultipartUpload"],
+                resources=[
+                    self.raw_bucket.arn_for_objects("raw/*"),
+                    self.processed_bucket.arn_for_objects("processed/*"),
+                ],
+            )
         )
