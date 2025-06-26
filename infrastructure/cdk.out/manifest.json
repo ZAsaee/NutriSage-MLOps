@@ -1,0 +1,89 @@
+{
+  "version": "36.0.0",
+  "artifacts": {
+    "DataLakeStack.assets": {
+      "type": "cdk:asset-manifest",
+      "properties": {
+        "file": "DataLakeStack.assets.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+      }
+    },
+    "DataLakeStack": {
+      "type": "aws:cloudformation:stack",
+      "environment": "aws://352364310453/us-east-1",
+      "properties": {
+        "templateFile": "DataLakeStack.template.json",
+        "terminationProtection": false,
+        "validateOnSynth": false,
+        "assumeRoleArn": "arn:${AWS::Partition}:iam::352364310453:role/cdk-hnb659fds-deploy-role-352364310453-us-east-1",
+        "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::352364310453:role/cdk-hnb659fds-cfn-exec-role-352364310453-us-east-1",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-352364310453-us-east-1/4cf7dfe2928dbd1d236c558a05a4498656fa7150c0a0b42f508b8cdf8e16a4c8.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
+        "additionalDependencies": [
+          "DataLakeStack.assets"
+        ],
+        "lookupRole": {
+          "arn": "arn:${AWS::Partition}:iam::352364310453:role/cdk-hnb659fds-lookup-role-352364310453-us-east-1",
+          "requiresBootstrapStackVersion": 8,
+          "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+        }
+      },
+      "dependencies": [
+        "DataLakeStack.assets"
+      ],
+      "metadata": {
+        "/DataLakeStack/RawBucket/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "RawBucket0C3EE094"
+          }
+        ],
+        "/DataLakeStack/ProcessedBucket/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ProcessedBucketDE59930C"
+          }
+        ],
+        "/DataLakeStack/RawBucketName": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "RawBucketName"
+          }
+        ],
+        "/DataLakeStack/ProcessedBucketName": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ProcessedBucketName"
+          }
+        ],
+        "/DataLakeStack/CDKMetadata/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CDKMetadata"
+          }
+        ],
+        "/DataLakeStack/BootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BootstrapVersion"
+          }
+        ],
+        "/DataLakeStack/CheckBootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CheckBootstrapVersion"
+          }
+        ]
+      },
+      "displayName": "DataLakeStack"
+    },
+    "Tree": {
+      "type": "cdk:tree",
+      "properties": {
+        "file": "tree.json"
+      }
+    }
+  }
+}

@@ -56,3 +56,27 @@ command.
  * `cdk docs`        open CDK documentation
 
 Enjoy!
+
+
+------------------------------------------------------------------
+### Partition strategy 🚀
+
+All processed Parquet shards are written under the **`processed/`** prefix using
+**two Hive-style partitions**:
+
+s3://<processed-bucket>/processed/
+└── year=<YYYY>/
+└── country=<slug>/
+part-0000.parquet
+
+sql
+Copy
+Edit
+
+* **`year`** – extracted from `created_t` (UTC epoch → calendar year).  
+* **`country`** – first token of `countries_tags`, lower-cased, language
+  prefix stripped (`en:united-states` → `united-states`).
+
+This layout keeps partition count reasonable (≈ years × countries) while
+matching common query filters (time window + user locale). It also minimises
+Athena scan size by enabling **partition pruning**.
