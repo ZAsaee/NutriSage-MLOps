@@ -59,7 +59,7 @@ Enjoy!
 
 
 ------------------------------------------------------------------
-### Partition strategy 🚀
+### Partition strategy 
 
 All processed Parquet shards are written under the **`processed/`** prefix using
 **two Hive-style partitions**:
@@ -80,3 +80,29 @@ Edit
 This layout keeps partition count reasonable (≈ years × countries) while
 matching common query filters (time window + user locale). It also minimises
 Athena scan size by enabling **partition pruning**.
+
+
+### Canonical Feature Subset (Day-1)
+columns:
+  - energy-kcal_100g
+  - fat_100g
+  - saturated-fat_100g
+  - carbohydrates_100g
+  - sugars_100g
+  - fiber_100g
+  - proteins_100g
+  - sodium_100g
+  - additives_n
+  - fruits-vegetables-nuts_100g
+  - ingredients_from_palm_oil_n
+  - ingredients_that_may_be_from_palm_oil_n
+  - main_category
+  - categories_tags
+  - labels_tags
+  - packaging_tags
+  - brands_tags
+  - countries_tags
+  - serving_size
+  - created_t
+# target
+  - nutrition_grade_fr
