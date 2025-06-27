@@ -18,5 +18,6 @@ columns:
   - brands_tags
   - countries_tags
   - serving_size
+  - created_t
 # target
   - nutrition_grade_fr
