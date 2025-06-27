@@ -106,3 +106,13 @@ columns:
   - created_t
 # target
   - nutrition_grade_fr
+
+> **Day-1 note:** The initial load is designed to run from a developer workstation.  
+> Future versions may move to an ephemeral EC2 runner or Step Functions task.
+
+## Validation metrics (Day-1)
+
+After each ingest run:
+
+```bash
+python src/ingestion/validate_ingest.py --bucket <PROC_BUCKET> --profile <AWS_PROFILE>
