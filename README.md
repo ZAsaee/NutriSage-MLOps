@@ -59,6 +59,10 @@ Enjoy!
 
 
 ------------------------------------------------------------------
+### CDK synth command
+cdk synth -a "python infrastructure/app.py"
+cdk deploy -a "python infrastructure/app.py" --require-approval never
+
 ### Partition strategy 
 
 All processed Parquet shards are written under the **`processed/`** prefix using
@@ -116,3 +120,15 @@ After each ingest run:
 
 ```bash
 python src/ingestion/validate_ingest.py --bucket <PROC_BUCKET> --profile <AWS_PROFILE>
+
+PWS
+$Env:PYTHONPATH = "$PWD\src;$Env:PYTHONPATH"
+✔ Ingested 3,902,201 rows in 40.6 min (1,601 rows/s)
+
+ python -m ingestion.validate_ingest --bucket nutrisage-processed-352364310453 --profile nutrisage-dev
+
+  python -m ingestion.ingest_nutrisage --input data/openfoodfacts-products.jsonl.gz --raw-bucket nutrisage-raw-352364310453 --proc-bucket nutrisage-processed-352364310453 --profile nutrisage-dev --chunk-rows 50_000
+
+Validation
+(.venv) (base) PS C:\Users\Asaeez\Documents\Zohreh\personal_project\nutrisage-mlops> python -m ingestion.validate_ingest --bucket nutrisage-processed-352364310453 --profile nutrisage-dev
+✔ Summary validation OK – 3,902,201 rows; cols & types match
