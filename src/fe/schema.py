@@ -1,6 +1,7 @@
 """
 Nutrisage schema & helpers
 _____________________________________________________________________________________
+* Approved columns (currently 21). Update this list, not the number.
 * KEEP_COLS - <= 20 approved columns(loaded from candidate-columns.yml)
 * COLUMN_PATHS - JSON paths to reach each column in the raw object
 * DTYPES - optional pandas dtypes for faster ingest
@@ -18,19 +19,65 @@ from pathlib import Path
 import numpy as np
 import yaml
 
-# locate and read the yaml file listing selected features
-if __package__:
-    _yaml_path = files(__package__).joinpath("candidate-columns.yml")
-elif __file__:
-    _yaml_path = Path(__file__).with_name("candidate-columns.yml")
 
-# get columns
-KEEP_COLS: List[str] = yaml.safe_load(open(_yaml_path))["columns"]
+KEEP_COLS: list[str] = [
+    # numeric nutrients
+    "energy_100g",
+    "energy-kcal_100g",
+    "fat_100g",
+    "saturated-fat_100g",
+    "carbohydrates_100g",
+    "sugars_100g",
+    "fiber_100g",
+    "proteins_100g",
+    "sodium_100g",
+
+    # text / lists / misc
+    "product_name",
+    "main_category",
+    "brands_tags",
+    "countries_tags",
+    "serving_size",
+
+    # timestamp
+    "created_t",
+
+    # target
+    "nutrition_grade_fr",
+]
+
+# hive-style partition columns live in the path, not in KEEP_COLS
+PART_COLS: list[str] = ["year", "country"]
+
+# --------------------------------------------------------------------------- #
+# Desired Pandas / PyArrow dtypes                                             #
+# --------------------------------------------------------------------------- #
+DTYPES: dict[str, str] = {
+    # floats – keep as float32
+    "energy_100g": "float32",
+    "energy-kcal_100g": "float32",
+    "fat_100g": "float32",
+    "saturated-fat_100g": "float32",
+    "carbohydrates_100g": "float32",
+    "sugars_100g": "float32",
+    "fiber_100g": "float32",
+    "proteins_100g": "float32",
+    "sodium_100g": "float32",
+
+    # plain strings
+    "main_category": "string",
+    "serving_size": "string",
+    "nutrition_grade_fr": "string",
+
+    # epoch seconds
+    "created_t": "Int64",
+}
+
 
 TARGET = "nutrition_grade_fr"
 PREDICTORS = [c for c in KEEP_COLS if c != TARGET]
 
-# Nutrient-style fields live under the "nutrimets" sub-dict
+# Nutrient-style fields live under the "nutriments" sub-dict
 NUTRIMENTS_KEY = [k for k in KEEP_COLS if k.endswith('_100g')]
 
 # map canonical column name to list path inside JSON object
@@ -38,9 +85,6 @@ COLUMN_PATHS: Dict[str, List[str]] = {
     col: (["nutriments", col] if col in NUTRIMENTS_KEY else [col])
     for col in KEEP_COLS
 }
-
-# Optional Pandas dtypes (floats for nutrients)
-DTYPES: Dict[str, Any] = {k: np.float32 for k in NUTRIMENTS_KEY}
 
 # Partition helpers (year, country)
 _LANG_PREFIX = re.compile(r"^[a-z]{2}[:_\-]?")  # en:, fr-, de_

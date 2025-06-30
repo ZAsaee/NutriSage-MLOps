@@ -8,7 +8,8 @@ from aws_cdk import (
     RemovalPolicy,
     Duration,
     CfnOutput,
-    aws_s3_deployment as s3deploy
+    aws_s3_deployment as s3deploy,
+    aws_logs as logs,
 )
 from constructs import Construct
 import yaml
@@ -144,4 +145,11 @@ class DataLakeStack(Stack):
                     self.processed_bucket.arn_for_objects("processed/*"),
                 ],
             )
+        )
+
+        # Cloudwatch log group for ingestion validation
+        logs.LogGroup(
+            self, "IngestValidationLog",
+            log_group_name="/nutrisage/ingest/validation",
+            retention=logs.RetentionDays.ONE_WEEK,
         )
