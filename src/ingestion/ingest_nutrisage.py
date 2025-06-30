@@ -94,26 +94,15 @@ def stream_ingest(local_path: str,
 
             # ---------- 1 · Float nutrient columns --------------------------------
             float_cols = [
-                "energy-kcal_100g", "fat_100g", "saturated-fat_100g",
+                "energy_100g", "energy-kcal_100g", "fat_100g", "saturated-fat_100g",
                 "carbohydrates_100g", "sugars_100g", "fiber_100g",
-                "proteins_100g", "sodium_100g", "fruits-vegetables-nuts_100g",
+                "proteins_100g", "sodium_100g",
             ]
             df[float_cols] = df[float_cols].apply(
                 lambda s: pd.to_numeric(s, errors="coerce").astype("float32")
             )
 
-            # ---------- 2 · Integer count columns --------------------------------
-            int_cols = [
-                "additives_n",
-                "ingredients_from_palm_oil_n",
-                "ingredients_that_may_be_from_palm_oil_n",
-            ]
-            df[int_cols] = df[int_cols].apply(
-                lambda s: pd.to_numeric(
-                    s, errors="coerce").round().astype("Int64")
-            )
-
-            # ---------- 3 · Tag arrays → list[string] ----------------------------
+            # ---------- 2 · Tag arrays → list[string] ----------------------------
             tag_cols = ["categories_tags", "brands_tags", "countries_tags"]
 
             def _to_str_list(x: Any) -> list[str]:
@@ -126,7 +115,7 @@ def stream_ingest(local_path: str,
             for col in tag_cols:
                 df[col] = df[col].apply(_to_str_list)
 
-            # ---------- 4 · Misc strings & timestamp -----------------------------
+            # ---------- 3 · Misc strings & timestamp -----------------------------
             df["main_category"] = df["main_category"].astype(
                 "string").replace("", pd.NA)
             df["serving_size"] = df["serving_size"].astype(
