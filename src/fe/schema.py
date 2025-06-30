@@ -22,6 +22,7 @@ import yaml
 
 KEEP_COLS: list[str] = [
     # numeric nutrients
+    "energy_100g",
     "energy-kcal_100g",
     "fat_100g",
     "saturated-fat_100g",
@@ -30,16 +31,10 @@ KEEP_COLS: list[str] = [
     "fiber_100g",
     "proteins_100g",
     "sodium_100g",
-    "fruits-vegetables-nuts_100g",
-
-    # numeric counts
-    "additives_n",
-    "ingredients_from_palm_oil_n",
-    "ingredients_that_may_be_from_palm_oil_n",
 
     # text / lists / misc
+    "product_name",
     "main_category",
-    "categories_tags",
     "brands_tags",
     "countries_tags",
     "serving_size",
@@ -59,6 +54,7 @@ PART_COLS: list[str] = ["year", "country"]
 # --------------------------------------------------------------------------- #
 DTYPES: dict[str, str] = {
     # floats – keep as float32
+    "energy_100g": "float32",
     "energy-kcal_100g": "float32",
     "fat_100g": "float32",
     "saturated-fat_100g": "float32",
@@ -67,12 +63,6 @@ DTYPES: dict[str, str] = {
     "fiber_100g": "float32",
     "proteins_100g": "float32",
     "sodium_100g": "float32",
-    "fruits-vegetables-nuts_100g": "float32",
-
-    # counts – nullable integers
-    "additives_n": "Int64",
-    "ingredients_from_palm_oil_n": "Int64",
-    "ingredients_that_may_be_from_palm_oil_n": "Int64",
 
     # plain strings
     "main_category": "string",
