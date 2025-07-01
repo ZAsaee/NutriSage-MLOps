@@ -27,7 +27,7 @@ class DataLakeStack(Stack):
         super().__init__(scope, cid, **kwargs)
 
         account = os.getenv("CDK_DEFAULT_ACCOUNT")
-        prefix = os.getenv("PROJECT_PREFIX", "nutrisage")
+        prefix = os.getenv("PROJECT_PREFIX", "Nutrisage")
 
         # s3 bucket for raw data
         self.raw_bucket = s3.Bucket.from_bucket_name(
@@ -41,8 +41,15 @@ class DataLakeStack(Stack):
             bucket_name=f"{prefix}-processed-{account}"
         )
 
+        # s3 bucket for athena results
+        self.athena_results_bucket = s3.Bucket.from_bucket_name(
+            self,
+            "AthenaResultsBucketImported",
+            bucket_name=f"{prefix}-athena-results-{account}"
+        )
+
         # Glue database
-        database = glue.CfnDatabase(
+        self.database = glue.CfnDatabase(
             self, "DB",
             catalog_id=self.account,
             database_input=glue.CfnDatabase.DatabaseInputProperty(
@@ -53,7 +60,7 @@ class DataLakeStack(Stack):
         table = glue.CfnTable(
             self, "Table",
             catalog_id=self.account,
-            database_name=database.ref,
+            database_name=self.database.ref,
             table_input=glue.CfnTable.TableInputProperty(
                 name="foodfacts_raw",
                 table_type="EXTERNAL_TABLE",
@@ -75,6 +82,7 @@ class DataLakeStack(Stack):
                 ),
             ),
         )
+        table.add_dependency(self.database)
 
         CfnOutput(
             self, "RawBucketName",
@@ -101,33 +109,46 @@ class DataLakeStack(Stack):
             export_name=f"{self.stack_name}-ProcessedPrefix"
         )
 
-        # Seed raw/ prefix with a placeholder object
-        s3deploy.BucketDeployment(
+        CfnOutput(
             self,
-            "SeedRawPrefix",
-            destination_bucket=self.raw_bucket,
-            destination_key_prefix="raw",
-            sources=[
-                s3deploy.Source.data(
-                    "_README.txt",
-                    "Place source JSONL (.jsonl.gz) files here; do not modify once uploaded."
-                )
-            ],
+            "AthenaResultsBucketName",
+            value=self.athena_results_bucket.bucket_name,
+            export_name="AthenaResultsBucketName",
         )
 
-        # # Seed processed/ prefix with a placeholder object
-        s3deploy.BucketDeployment(
-            self,
-            "SeedProcessedPrefix",
-            destination_bucket=self.processed_bucket,
-            destination_key_prefix="processed",
-            sources=[
-                s3deploy.Source.data(
-                    "_README.txt",
-                    "Auto-generated Parquet only - written by the ingestion job."
-                )
-            ],
+        CfnOutput(
+            self, "NutrisageDBName",
+            value=self.database.ref,
+            export_name="NutrisageDB",
         )
+
+        # Seed raw/ prefix with a placeholder object
+        # s3deploy.BucketDeployment(
+        #     self,
+        #     "SeedRawPrefix",
+        #     destination_bucket=self.raw_bucket,
+        #     destination_key_prefix="raw",
+        #     sources=[
+        #         s3deploy.Source.data(
+        #             "_README.txt",
+        #             "Place source JSONL (.jsonl.gz) files here; do not modify once uploaded."
+        #         )
+        #     ],
+        # )
+
+        # # Seed processed/ prefix with a placeholder object
+        # s3deploy.BucketDeployment(
+        #     self,
+        #     "SeedProcessedPrefix",
+        #     destination_bucket=self.processed_bucket,
+        #     destination_key_prefix="processed",
+        #     sources=[
+        #         s3deploy.Source.data(
+        #             "_README.txt",
+        #             "Auto-generated Parquet only - written by the ingestion job."
+        #         )
+        #     ],
+        # )
 
         # IAM for ingestion role
         ingest_role = iam.Role(
@@ -143,6 +164,7 @@ class DataLakeStack(Stack):
                 resources=[
                     self.raw_bucket.arn_for_objects("raw/*"),
                     self.processed_bucket.arn_for_objects("processed/*"),
+                    self.athena_results_bucket.arn_for_objects("athena/*"),
                 ],
             )
         )
