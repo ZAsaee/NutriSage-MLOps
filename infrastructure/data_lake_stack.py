@@ -16,7 +16,7 @@ import yaml
 import os
 
 # Helper: load column list to build the the Glue schema
-print(Path(__file__).parents[1])
+
 COLS_YAML = Path(__file__).parents[1] / "src" / "fe" / "candidate-columns.yml"
 KEEP_COLS = yaml.safe_load(COLS_YAML.read_text())["columns"]
 TARGET = "nutrition_grade_fr"
@@ -56,59 +56,94 @@ class DataLakeStack(Stack):
                 name=f"{prefix}_datalake"),
         )
 
-        # Glue table using the same processed bucket
-        table = glue.CfnTable(
-            self, "Table",
-            catalog_id=self.account,
-            database_name=self.database.ref,
-            table_input=glue.CfnTable.TableInputProperty(
-                name="foodfacts_raw",
-                table_type="EXTERNAL_TABLE",
-                partition_keys=[
-                    glue.CfnTable.ColumnProperty(name="year", type="int"),
-                    glue.CfnTable.ColumnProperty(
-                        name="country", type="string"),
-                ],
-                storage_descriptor=glue.CfnTable.StorageDescriptorProperty(
-                    location=f"s3://{self.processed_bucket.bucket_name}/processed/",
-                    input_format="org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat",
-                    output_format="org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat",
-                    serde_info=glue.CfnTable.SerdeInfoProperty(
-                        serialization_library="org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe",
-                    ),
-                    columns=[
-                        glue.CfnTable.ColumnProperty(name=c, type="string") for c in KEEP_COLS
-                    ],
-                ),
-            ),
+        # Create crawler and IAM role
+        glue_role = iam.Role(
+            self, "GlueCrawlerRole",
+            assumed_by=iam.ServicePrincipal("glue.amazonaws.com"),
+            managed_policies=[
+                iam.ManagedPolicy.from_aws_managed_policy_name(
+                    "service-role/AWSGlueServiceRole")
+            ]
         )
-        table.add_dependency(self.database)
 
+        self.processed_bucket.grant_read(
+            glue_role)   # allow crawler to scan data
+
+        processed_crawler = glue.CfnCrawler(
+            self, "ProcessedCrawler",
+            name="nutrisage-processed-crawler",
+            role=glue_role.role_arn,
+            database_name=self.database.ref,                # existing Glue DB
+            targets=glue.CfnCrawler.TargetsProperty(
+                s3_targets=[glue.CfnCrawler.S3TargetProperty(
+                    # partition root
+                    path=f"s3://{self.processed_bucket.bucket_name}/processed/"
+                )]
+            ),
+            table_prefix="foodfacts_clean_",
+            schema_change_policy=glue.CfnCrawler.SchemaChangePolicyProperty(
+                update_behavior="LOG",
+                delete_behavior="DEPRECATE_IN_DATABASE"
+            )
+        )
+
+        # Glue table using the same processed bucket
+        # table=glue.CfnTable(
+        #     self, "Table",
+        #     catalog_id=self.account,
+        #     database_name=self.database.ref,
+        #     table_input=glue.CfnTable.TableInputProperty(
+        #         name="foodfacts_raw",
+        #         table_type="EXTERNAL_TABLE",
+        #         partition_keys=[
+        #             glue.CfnTable.ColumnProperty(name="year", type="int"),
+        #             glue.CfnTable.ColumnProperty(
+        #                 name="country", type="string"),
+        #         ],
+        #         storage_descriptor=glue.CfnTable.StorageDescriptorProperty(
+        #             location=f"s3://{self.processed_bucket.bucket_name}/processed/",
+        #             input_format="org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat",
+        #             output_format="org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat",
+        #             serde_info=glue.CfnTable.SerdeInfoProperty(
+        #                 serialization_library="org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe",
+        #             ),
+        #             columns=[
+        #                 glue.CfnTable.ColumnProperty(name=c, type="string") for c in KEEP_COLS
+        #             ],
+        #         ),
+        #     ),
+        # )
+        # table.add_dependency(self.database)
+
+        # Export raw bucket name for downstream stacks
         CfnOutput(
             self, "RawBucketName",
             value=self.raw_bucket.bucket_name,
             export_name=f"{self.stack_name}-raw-bucket"
         )
 
+        # Export processed bucket name for downstream stacks
         CfnOutput(
             self, "ProcessedBucketName",
             value=self.processed_bucket.bucket_name,
             export_name=f"{self.stack_name}-processed-bucket"
         )
 
-        # Create prefixes inside s3 buckets
+        # Export raw bucket prefix for downstream stacks
         CfnOutput(
             self, "RawPrefix",
             value=f"s3://{self.raw_bucket.bucket_name}/raw/",
             export_name=f"{self.stack_name}-RawPrefix"
         )
 
+        # Export processed bucket prefix for downstream stacks
         CfnOutput(
             self, "ProcessedPrefix",
             value=f"s3://{self.processed_bucket.bucket_name}/processed/",
             export_name=f"{self.stack_name}-ProcessedPrefix"
         )
 
+        # Export raw bucket prefix for downstream stacks
         CfnOutput(
             self,
             "AthenaResultsBucketName",
@@ -116,10 +151,18 @@ class DataLakeStack(Stack):
             export_name="AthenaResultsBucketName",
         )
 
+        # Export Glue database for downstream stacks
         CfnOutput(
             self, "NutrisageDBName",
             value=self.database.ref,
             export_name="NutrisageDB",
+        )
+
+        # Export processed-data crawler so other stacks can start it ──
+        CfnOutput(
+            self, "NutriSageProcessedCrawler",
+            value=processed_crawler.ref,          # .ref returns the crawler name
+            export_name="NutriSageProcessedCrawler",
         )
 
         # Seed raw/ prefix with a placeholder object
