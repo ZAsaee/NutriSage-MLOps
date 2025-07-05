@@ -2,6 +2,7 @@ from aws_cdk import (
     Stack,
     Duration,
     Fn,
+    CfnOutput,
     aws_iam as iam,
     aws_s3 as s3,
     aws_stepfunctions as sfn,
@@ -42,6 +43,15 @@ class PipelineStack(Stack):
         )
         raw_bucket.grant_read(sm_role)
         processed_bucket.grant_read_write(sm_role)
+
+        self.exec_role = iam.Role(
+            self, "NutriSageExecRole",
+            assumed_by=iam.ServicePrincipal("sagemaker.amazonaws.com"),
+        )
+
+        CfnOutput(self, "NutriSageExecRoleArn",
+                  value=self.exec_role.role_arn,
+                  export_name="NutriSageExecRoleArn")
 
         # ────────────────────────────────────────
         #  Step 1 – SageMaker Processing (sync)
