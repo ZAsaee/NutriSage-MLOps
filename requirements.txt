@@ -1,2 +1,4 @@
-aws-cdk-lib==2.38.0
-constructs>=10.0.0,<11.0.0
+pandas==2.2.2
+scikit-learn==1.5.0
+xgboost==2.0.3
+ydata-profiling==4.6.5
