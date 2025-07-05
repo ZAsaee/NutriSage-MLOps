@@ -1,7 +1,8 @@
 __pycache__/
 *.py[cod]
 *.egg-info/
-.venv/
+.venv-dev/
+.venv-infra/
 cdk.out/
 cdk.context.json
 .DS_Store
